@@ -45,7 +45,6 @@ class TuningBlockList(nn.Module):
         b0_size = 128
         b1_size = 64
         b2_size = 32
-        self.activated_blocks = 0
         self.device = torch.device("cuda")
         self.block_sizes = [b2_size, b1_size, b0_size, b0_size, b0_size, b0_size, b0_size, b0_size, b1_size, b2_size]
         self.blocks_list = list()
@@ -58,7 +57,6 @@ class TuningBlockList(nn.Module):
 
     def insert_block(self, layer_num, path):
         self.blocks_list[layer_num].load_state_dict(torch.load(path))
-        self.activated_blocks += 1
 
 
 

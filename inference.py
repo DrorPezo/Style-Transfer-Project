@@ -16,15 +16,15 @@ save_blocks = False
 load_block = True
 block_size = 128
 tuning_block = None
-network_name = 'feathers_deconv3_1'
+network_name = 'feathers_waterfall'
 use_saved_config = True  # use the configuration saved at training time (if saved)
 set_net_version = 'multi'  # None/normal/dual/multi, set to None if you want to use saved config file
 alpha_0s = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]  # alpha_0 values for normal version
-alpha_1s = [None]  # alpha_1 values for normal version (if None alpha_0=alpha_1=alpha_2)
-alpha_2s = [None]  # alpha_2 values for normal version (if None alpha_0=alpha_1=alpha_2)
+alpha_1s = [0, 1]  # alpha_1 values for normal version (if None alpha_0=alpha_1=alpha_2)
+alpha_2s = alpha_1s  # alpha_2 values for normal version (if None alpha_0=alpha_1=alpha_2)
 alpha_0s_dual = [-1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1] + alpha_0s  # alpha_0 values for dual version
-alpha_1s_dual = [None]  # alpha_1 values for dual version (if None alpha_0=alpha_1=alpha_2)
-alpha_2s_dual = [None]  # alpha_2 values for dual version (if None alpha_0=alpha_1=alpha_2)
+alpha_1s_dual = [-1, 0, 1]  # alpha_1 values for dual version (if None alpha_0=alpha_1=alpha_2)
+alpha_2s_dual = alpha_1s_dual  # alpha_2 values for dual version (if None alpha_0=alpha_1=alpha_2)
 # ------------------------ #
 
 parser = argparse.ArgumentParser()
@@ -39,10 +39,14 @@ if set_net_version == 'None':
     set_net_version = None
 
 networks_path = os.path.join('trained_nets', network_name)
-block_path0 = os.path.join(networks_path, 'checkpoints', 'block0_dynamic_net.pth')
-block_path1 = os.path.join(networks_path, 'checkpoints', 'block1_dynamic_net.pth')
-block_path2 = os.path.join(networks_path, 'checkpoints', 'block2_dynamic_net.pth')
-model_path = os.path.join(networks_path, 'model_dir', 'dynamic_net.pth')# change to 'dynamic_net.pth'
+block_path0H = os.path.join('trained_nets', 'feathers_conv3_4', 'checkpoints', 'block1_dynamic_net.pth')
+block_path0L = os.path.join('trained_nets', 'feathers_conv3_4_0', 'checkpoints', 'block1_dynamic_net.pth')
+block_path1H = os.path.join('trained_nets', 'feathers_res3_2', 'checkpoints', 'block0_dynamic_net.pth')
+block_path1L = os.path.join('trained_nets', 'feathers_res3_2_0', 'checkpoints', 'block0_dynamic_net.pth')
+block_path2H = os.path.join('trained_nets', 'feathers_deconv3_1', 'checkpoints', 'block2_dynamic_net.pth')
+block_path2L = os.path.join('trained_nets', 'feathers_deconv3_1_0', 'checkpoints', 'block2_dynamic_net.pth')
+
+model_path = os.path.join(networks_path, 'model_dir', 'orginal_main_net.pth')# change to 'dynamic_net.pth'
 config_path = os.path.join(networks_path, 'config.txt')
 inference_images_path = os.path.join('images', 'inference_images')
 save_path = os.path.join('results', 'inference_results', network_name)
@@ -100,7 +104,9 @@ if set_net_version == 'multi':
     dynamic_model = InferenceModel(opt, set_net_version=set_net_version)
     dynamic_model.load_multi_network(model_path)
     # Add here all the desired blocks
-    dynamic_model.load_block(9, block_path2)
+    dynamic_model.load_block(1, block_path0H, block_path0L)
+    dynamic_model.load_block(4, block_path1H, block_path1L)
+    dynamic_model.load_block(9, block_path2H, block_path2L)
     # for key, value in dynamic_model.net.state_dict().items():
     #     print(key)
 
@@ -119,8 +125,14 @@ if set_net_version == 'multi':
         input_tensor = dynamic_model.normalize(input_tensor)
         input_tensor = input_tensor.expand(1, -1, -1, -1)
         save_name = image_name.split('.')[0]
-        for alpha_0 in tqdm(alpha_0s):
-            output_tensor = dynamic_model.multi_forward_and_recover(input_tensor.requires_grad_(False), alpha=alpha_0)
-            output_image = to_pil_image(output_tensor.clamp(min=0.0, max=1).cpu().squeeze(dim=0))
-            output_image.save(os.path.join(save_path, '%s_%3f.png' % (save_name, alpha_0)))
+
+        for alpha_0 in tqdm(alpha_0s_dual):
+            for alpha_1 in alpha_1s_dual:
+                for alpha_2 in alpha_2s_dual:
+                    output_tensor = dynamic_model.forward_and_recover(input_tensor.requires_grad_(False), alpha_0=alpha_0, alpha_1=alpha_1, alpha_2=alpha_2)
+                    output_image = to_pil_image(output_tensor.clamp(min=0.0, max=1).cpu().squeeze(dim=0))
+                    if alpha_1 is not None and alpha_2 is not None:
+                        output_image.save(os.path.join(save_path, '%s_%3f_%3f_%3f.png' % (save_name, alpha_0, alpha_1, alpha_2)))
+                    else:
+                        output_image.save(os.path.join(save_path, '%s_%3f.png' % (save_name, alpha_0)))
 

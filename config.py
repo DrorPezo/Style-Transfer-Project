@@ -130,7 +130,9 @@ def get_configurations(parser=None):
 
     opt = parser.parse_args()
     opt.experiments_dir_name = os.path.join('experiments', opt.experiments_dir_name)
-    opt.checkpoint_dir = os.path.join(opt.experiments_dir_name, 'checkpoints')
+    opt.checkpoint_dir1 = os.path.join(opt.experiments_dir_name, 'checkpoints')
+    opt.checkpoint_dir2 = os.path.join(opt.experiments_dir_name, 'checkpoints')
+    opt.checkpoint_dir3 = os.path.join(opt.experiments_dir_name, 'checkpoints')
     opt.model_save_dir = os.path.join(opt.experiments_dir_name, 'model_dir')
     opt.images_save_dir = os.path.join(opt.experiments_dir_name, 'images')
     opt.block_path0 = os.path.join(opt.checkpoint_dir, 'block0_dynamic_net.pth')

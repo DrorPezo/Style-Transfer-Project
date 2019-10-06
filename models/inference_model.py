@@ -34,8 +34,8 @@ class InferenceModel(BaseModel):
         output_batch = self.net(input_batch, alpha_0=alpha_0, alpha_1=alpha_1, alpha_2=alpha_2)
         return self.recover_tensor(output_batch)
 
-    def multi_forward_and_recover(self, input_batch, alpha):
-        output_batch = self.net(input_batch, alpha)
+    def multi_forward_and_recover(self, input_batch, alpha_0=0, alpha_1=None, alpha_2=None):
+        output_batch = self.net(input_batch, alpha_0=alpha_0, alpha_1=alpha_1, alpha_2=alpha_2)
         return self.recover_tensor(output_batch)
 
     def load_network(self, net_path):
@@ -56,13 +56,7 @@ class InferenceModel(BaseModel):
     def load_multi_network(self, net_path):
         self.net.main.load_state_dict(torch.load(net_path))
 
-    def load_block(self, activated_layer, block_path):
+    def load_block(self, activated_layer, block_pathH, block_pathL):
         self.net.activation(activated_layer)
-        self.net.tuning_blocks_higher.insert_block(activated_layer, block_path)
-        self.net.tuning_blocks_lower.insert_block(activated_layer, block_path)
-
-
-
-
-
-
+        self.net.tuning_blocks_higher.insert_block(activated_layer, block_pathH)
+        self.net.tuning_blocks_lower.insert_block(activated_layer, block_pathL)
